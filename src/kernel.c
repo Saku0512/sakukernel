@@ -11,7 +11,7 @@ static volatile uint16_t *const VGA_BUFFER = (volatile uint16_t *)0xB8000;
 enum vga_color {
     VGA_BLACK       = 0,
     VGA_BLUE        = 1,
-    VGA_GREN        = 2,
+    VGA_GREEN       = 2,
     VGA_CYAN        = 3,
     VGA_RED         = 4,
     VGA_MAGENTA     = 5,
@@ -30,12 +30,16 @@ static size_t term_row = 0;
 static size_t term_col = 0;
 static uint8_t term_color = 0;
 
-static inline uint8_t vga_entry(char c, uint8_t color) {
+static inline uint8_t vga_color(enum vga_color fg, enum vga_color bg) {
+    return fg | (bg << 4);
+}
+
+static inline uint16_t vga_entry(char c, uint8_t color) {
     return (uint16_t)c | ((uint16_t)color << 8);
 }
 
 static void terminal_clear(void) {
-    for (size_t y = 0; y < VGA_WIDTH; y++) {
+    for (size_t y = 0; y < VGA_HEIGHT; y++) {
         for (size_t x = 0; x < VGA_WIDTH; x++) {
             VGA_BUFFER[y * VGA_WIDTH + x] = vga_entry(' ', term_color);
         }
@@ -97,13 +101,13 @@ static void terminal_write(const char *s) {
     }
 }
 
-static void panic(const char *msg) {
+static void __attribute__((unused)) panic(const char *msg) {
     term_color = vga_color(VGA_WHITE, VGA_RED);
     terminal_write("\nKERNEL PANIC: ");
     terminal_write(msg);
 
     while(1) {
-        __asm__ volatile ("clil hlt;");
+        __asm__ volatile ("cli; hlt");
     }
 }
 
